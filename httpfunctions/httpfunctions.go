@@ -3,7 +3,9 @@ package httpfunctions
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/DreamyMemories/blog-aggregator/internal/database"
@@ -15,7 +17,7 @@ func Mux(apiConfig *types.ApiConfig) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/readiness", corsMiddleware(http.HandlerFunc(handlerReadiness)))
 	mux.Handle("/v1/err", corsMiddleware(http.HandlerFunc(handlerError)))
-	mux.Handle("/v1/users", corsMiddleware(handlerCreateUser(apiConfig)))
+	mux.Handle("/v1/users", corsMiddleware(handlerUser(apiConfig)))
 	return mux
 }
 
@@ -27,7 +29,7 @@ func handlerError(w http.ResponseWriter, r *http.Request) {
 	respondWithError(w, http.StatusInternalServerError, "Internal Server Error")
 }
 
-func handlerCreateUser(apiConfig *types.ApiConfig) http.HandlerFunc {
+func handlerUser(apiConfig *types.ApiConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			ctx := context.Background()
@@ -50,13 +52,29 @@ func handlerCreateUser(apiConfig *types.ApiConfig) http.HandlerFunc {
 			// Create user in dbqueries
 			user, err := apiConfig.DB.CreateUser(ctx, newUser)
 			if err != nil {
-				respondWithError(w, http.StatusInternalServerError, "Failed to create user")
+				respondWithError(w, http.StatusInternalServerError, "Failed to create user "+err.Error())
 			}
+			fmt.Println(user)
 
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(user)
-		} else {
-			respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		} else if r.Method == http.MethodGet {
+			ctx := context.Background()
+			authHeader := r.Header.Get("Authorization")
+			const prefix = "ApiKey "
+			var apiKey string
+			if strings.HasPrefix(authHeader, prefix) {
+				apiKey = strings.TrimPrefix(authHeader, prefix)
+			} else {
+				respondWithError(w, http.StatusUnauthorized, "Unauthorized")
+			}
+
+			user, err := apiConfig.DB.GetUserByApiKey(ctx, apiKey)
+			if err != nil {
+				respondWithError(w, http.StatusUnauthorized, "Unauthorised API Key detected")
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(user)
 		}
 	}
 }

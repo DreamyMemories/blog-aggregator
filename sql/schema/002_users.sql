@@ -1,7 +1,7 @@
--- +goose up
+-- +goose Up
 ALTER TABLE users ADD COLUMN api_key VARCHAR(64) UNIQUE NOT NULL DEFAULT (
-    encode(digest(random()::text, 'sha256'), 'hex')
+    encode(sha256(random()::text::bytea), 'hex')
 );
 
--- +goose down
+-- +goose Down
 ALTER TABLE users DROP COLUMN api_key;
