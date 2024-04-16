@@ -9,7 +9,6 @@ import (
 
 	"github.com/DreamyMemories/blog-aggregator/httpfunctions"
 	"github.com/DreamyMemories/blog-aggregator/internal/database"
-	"github.com/DreamyMemories/blog-aggregator/types"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -29,7 +28,7 @@ func main() {
 		log.Fatalf("Error connecting to database : %v", err)
 	}
 	dbQueries := database.New(db)
-	apiConfig := &types.ApiConfig{
+	apiConfig := &httpfunctions.ApiConfig{
 		DB: dbQueries,
 	}
 
