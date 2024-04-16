@@ -2,10 +2,10 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/DreamyMemories/blog-aggregator/httpfunctions"
 	"github.com/DreamyMemories/blog-aggregator/internal/database"
@@ -38,9 +38,10 @@ func main() {
 		Addr:    ":" + port,
 		Handler: mux,
 	}
+	go httpfunctions.StartScraping(dbQueries, 10, time.Minute)
+	log.Println("Starting Server")
 	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
-	fmt.Println("Hello World", port)
 }
