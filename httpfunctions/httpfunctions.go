@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/DreamyMemories/blog-aggregator/internal/database"
@@ -25,6 +26,7 @@ func Mux(apiConfig *ApiConfig) *mux.Router {
 	mux.Handle("/v1/allfeeds", corsMiddleware(apiConfig.handlerGetAllFeed()))
 	mux.Handle("/v1/feed_follows", corsMiddleware(apiConfig.middlewareAuth(apiConfig.handlerCreateFeedFollow)))
 	mux.Handle("/v1/feed_follows/{feedFollowID}", corsMiddleware(apiConfig.middlewareAuth(apiConfig.handlerDeleteFeedFollow))).Methods("DELETE")
+	mux.Handle("/v1/posts/{limit}", corsMiddleware(apiConfig.middlewareAuth(apiConfig.handlerGetPostsByUser))).Methods("GET")
 	return mux
 }
 
@@ -186,6 +188,27 @@ func (apiConfig *ApiConfig) handlerDeleteFeedFollow(w http.ResponseWriter, r *ht
 		respondWithError(w, http.StatusBadRequest, "Failed to delete id "+err.Error())
 	}
 	respondWithJson(w, 200, feeds)
+}
+
+func (apiConfig *ApiConfig) handlerGetPostsByUser(w http.ResponseWriter, r *http.Request, user database.User) {
+	parameter := mux.Vars(r)
+	limit := parameter["limit"]
+	if limit == "" {
+		limit = "10"
+	}
+	lim, err := strconv.Atoi(limit)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Could not parse limit")
+	}
+
+	posts, err := apiConfig.DB.GetPostsByUser(context.Background(), database.GetPostsByUserParams{
+		UserID: user.ID,
+		Limit:  int32(lim),
+	})
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Could not create post"+err.Error())
+	}
+	respondWithJson(w, http.StatusOK, posts)
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
