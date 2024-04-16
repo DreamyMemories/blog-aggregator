@@ -12,9 +12,6 @@ This project is a blog aggregator that fetches and consolidates blog posts from 
 - [API Documentation](#api-documentation)
 - [Database Schema](#database-schema)
 - [Examples](#examples)
-- [Troubleshooting](#troubleshooting)
-- [Contributors](#contributors)
-- [License](#license)
 
 ## Installation
 To set up the project, follow these steps:
